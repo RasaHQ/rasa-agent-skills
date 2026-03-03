@@ -12,6 +12,7 @@ on:
     branches: [main]
     paths:
       - "skills/**"
+  workflow_dispatch:
 
 jobs:
   trigger:
