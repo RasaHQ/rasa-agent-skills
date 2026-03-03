@@ -2,7 +2,8 @@
 # so it opens a PR to update the Cursor plugin.
 #
 # Token (rasa-agent-skills secret CURSOR_PLUGIN_DISPATCH_TOKEN):
-# - Fine-grained PAT: repository access to the cursor-plugin repo with "Contents: read & write" and "Metadata: read".
+# - Fine-grained PAT: repository access to the cursor-plugin repo with "Contents: Read and write"
+#   and "Metadata: Read". Actions permission is not required for repository_dispatch.
 # - See https://github.com/marketplace/actions/repository-dispatch
 
 name: Trigger Cursor plugin sync
