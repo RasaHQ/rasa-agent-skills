@@ -1,0 +1,26 @@
+# When skills change on the default branch, trigger the rasa-cursor-plugin sync workflow
+# so it opens a PR to update the Cursor plugin.
+#
+# Token (rasa-agent-skills secret CURSOR_PLUGIN_DISPATCH_TOKEN):
+# - Fine-grained PAT: repository access to the cursor-plugin repo with "Contents: read & write" and "Metadata: read".
+# - See https://github.com/marketplace/actions/repository-dispatch
+
+name: Trigger Cursor plugin sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "skills/**"
+
+jobs:
+  trigger:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@28959ce8df70de7be546dd1250a005dd32156697 # v4.0.1
+        with:
+          token: ${{ secrets.CURSOR_PLUGIN_DISPATCH_TOKEN }}
+          repository: ${{ github.repository_owner }}/rasa-cursor-plugin
+          event-type: sync-skills
+          client-payload: '{"head_sha": "${{ github.sha }}", "ref": "${{ github.ref }}"}'
