@@ -1,5 +1,5 @@
 ---
-name: rasa-connecting-a2a-agents
+name: rasa-setting-up-a2a-agents
 description: >
   Connects external sub agents to a Rasa CALM assistant via the A2A (Agent-to-Agent)
   protocol. Use when adding an external agent, configuring an agent card, setting up
@@ -14,10 +14,10 @@ metadata:
 
 # Connecting A2A External Sub Agents
 
-External sub agents connected via the A2A (Agent-to-Agent) protocol operate as
-autonomous entities that handle complex, multi-turn conversations independently. When
-invoked through a `call` step in a flow, the external agent takes control of the
-conversation until its task is complete.
+External sub agents connected via the A2A protocol operate as autonomous entities that
+handle complex, multi-turn conversations independently. When invoked through a `call`
+step in a flow, the external agent takes control of the conversation until its task is
+complete.
 
 This feature is in **beta** and available starting from **Rasa 3.14.0**.
 
@@ -91,9 +91,10 @@ agent is unreachable, startup fails.
 
 ## Authentication
 
-Add an `auth` section under `configuration` when the external agent requires
-credentials. Sensitive values (`api_key`, `token`, `client_secret`) **must** use
-`${ENV_VAR}` syntax — plain text is rejected by validation.
+Add an `auth` section under `configuration` in the sub agent's `config.yml`
+(`sub_agents/<agent_name>/config.yml`) when the external agent requires credentials.
+Sensitive values (`api_key`, `token`, `client_secret`) **must** use `${ENV_VAR}`
+syntax — plain text is rejected by validation.
 
 ### API key
 

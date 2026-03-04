@@ -159,6 +159,11 @@ nlg:
 The rephraser (`nlg: type: rephrase`) is covered by the `rasa-rephrasing-responses`
 skill.
 
+### MCP servers
+
+MCP server configuration (`mcp_servers` in `endpoints.yml`) is covered by the
+`rasa-configuring-mcp-server` skill.
+
 ### Silence handling
 
 Controls how long the assistant waits before assuming the user is silent. Only applies
