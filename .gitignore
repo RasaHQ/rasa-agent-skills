@@ -1,1 +1,47 @@
-.vscode
+# OS
+.DS_Store
+*~
+
+# Python
+__pycache__/
+*.pyc
+*.egg
+*.eggs
+*.egg-info/
+.venv/
+venv/
+env/
+.tox
+.mypy_cache/
+.pytest_cache/
+*.coverage*
+dist/
+build/
+pip-wheel-metadata/
+
+# IDE
+.vscode/
+.idea/
+*.iml
+*.swp
+.dir-locals.el
+
+# Cursor
+.cursor/
+.cursorignore
+.cursorindexingignore
+.history
+
+# Rasa
+models/
+*.tar.gz
+*.sqlite
+*.db
+.rasa
+
+# Misc
+.env
+*.log
+.cache/
+tmp/
+node_modules/
