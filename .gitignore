@@ -32,13 +32,6 @@ pip-wheel-metadata/
 .cursorindexingignore
 .history
 
-# Rasa
-models/
-*.tar.gz
-*.sqlite
-*.db
-.rasa
-
 # Misc
 .env
 *.log
