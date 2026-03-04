@@ -26,6 +26,21 @@ Build conversation flows for Rasa CALM agents in YAML. Covers flow design, branc
 - `call` vs `link` for connecting flows
 - Flow guards
 
+### rasa-calling-mcp-tools-from-flows
+
+Call MCP tools directly from Rasa flow steps. Replaces custom action code for simple API integrations by using a `call` step with explicit input/output mappings.
+
+**Use when:**
+- Invoking an MCP tool via a `call` step in a flow
+- Mapping slot values to tool parameters
+- Extracting tool results (structured or unstructured) into slots
+
+**Topics covered:**
+- `call` step with `mcp_server` and `mapping`
+- Input mapping (`param` + `slot`)
+- Output mapping (`slot` + `value` with Jinja2 expressions)
+- Structured vs unstructured tool result formats
+
 ### rasa-configuring-assistant
 
 Configure `config.yml` and `endpoints.yml` for Rasa CALM agents. Covers pipeline components, policies, action endpoint, and language settings.
@@ -42,6 +57,22 @@ Configure `config.yml` and `endpoints.yml` for Rasa CALM agents. Covers pipeline
 - Policies (`FlowPolicy`)
 - Language and multilingual setup
 - Model groups, action endpoint, NLG server
+
+### rasa-configuring-mcp-server
+
+Configure MCP (Model Context Protocol) servers in `endpoints.yml`. Covers server definitions, authentication methods, and connecting to multiple external services.
+
+**Use when:**
+- Defining MCP servers in `endpoints.yml`
+- Setting up authentication (API key, OAuth 2.0, pre-issued token)
+- Connecting to multiple external services
+
+**Topics covered:**
+- Server definition (`name`, `url`, `type`)
+- API key authentication (default and custom headers)
+- OAuth 2.0 (client credentials)
+- Pre-issued token authentication
+- Environment variable syntax for secrets
 
 ### rasa-configuring-model-groups
 
@@ -92,6 +123,24 @@ Enable and configure the LLM-powered Contextual Response Rephraser. Covers `endp
 - Rephrasing scope (specific, all, all-except)
 - Global and per-response prompt customization
 
+### rasa-setting-up-a2a-agents
+
+Connect external sub agents to a Rasa CALM assistant via the A2A (Agent-to-Agent) protocol. Covers agent card configuration, authentication, flow invocation, and input/output customization.
+
+**Use when:**
+- Adding an external agent connected via A2A
+- Configuring an agent card and authentication
+- Invoking an external sub agent from a flow
+- Customizing input/output processing with a Python module
+
+**Topics covered:**
+- Directory structure and `config.yml` setup
+- Agent card (obtaining and referencing)
+- Authentication (API key, OAuth 2.0, pre-issued token)
+- Invoking from a flow with `call` step
+- Task vs Message response patterns
+- Custom `A2AAgent` class (`process_input`, `process_output`)
+
 ### rasa-setting-up-enterprise-search
 
 Add knowledge-base search to a Rasa CALM agent using `EnterpriseSearchPolicy`. Connect vector stores (Faiss, Milvus, Qdrant) and configure generative or extractive search.
@@ -109,6 +158,25 @@ Add knowledge-base search to a Rasa CALM agent using `EnterpriseSearchPolicy`. C
 - Vector stores (Faiss, Milvus, Qdrant)
 - Prompt customization
 - Custom information retrievers
+
+### rasa-setting-up-react-agents
+
+Configure ReAct sub agents that dynamically select MCP tools based on conversation context. Covers general-purpose and task-specific agent types, prompt customization, tool filtering, and custom Python tools.
+
+**Use when:**
+- Creating a ReAct sub agent that uses MCP tools
+- Choosing between general-purpose and task-specific agents
+- Filtering which MCP tools an agent can access
+- Customizing prompts, input/output processing, or adding custom tools
+
+**Topics covered:**
+- Directory structure and `config.yml` setup
+- General-purpose vs task-specific agents (completion mechanisms)
+- Tool filtering (`include_tools`, `exclude_tools`)
+- Invoking from a flow (with and without `exit_if`)
+- Custom prompt templates (Jinja2)
+- Custom agent class (`MCPOpenAgent`, `MCPTaskAgent`)
+- Adding custom Python tools (`get_custom_tool_definitions`)
 
 ### rasa-writing-custom-actions
 
