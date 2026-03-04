@@ -241,7 +241,3 @@ responses:
     - text: "What would you like to do today?"
       allow_interruptions: true      # default
 ```
-
-## Full reference
-
-<!-- TODO: Add references/responses-reference.md with complete syntax documentation -->

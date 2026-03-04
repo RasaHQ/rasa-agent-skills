@@ -183,7 +183,3 @@ different conventions, match those instead.
 - Prefix booleans with `is_` or `has_`: `is_verified`, `has_insurance`
 - Avoid special characters `(`, `)`, `=`, `,` in slot names — they break response button
   payloads
-
-## Full reference
-
-<!-- TODO: Add references/slots-reference.md with complete syntax documentation -->

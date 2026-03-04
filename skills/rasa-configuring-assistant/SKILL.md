@@ -173,7 +173,3 @@ to voice-stream channels (Twilio, Browser Audio, Genesys, Jambonz, Audiocodes).
 interaction_handling:
   global_silence_timeout: 7    # seconds, default: 7
 ```
-
-## Full reference
-
-<!-- TODO: Add references/config-reference.md with complete syntax documentation -->

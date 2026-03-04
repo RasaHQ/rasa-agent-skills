@@ -241,7 +241,3 @@ Rasa. Key fields on `AgentOutput`:
   workflow so the agent can signal `COMPLETED`.
 - **User messages during processing** — messages sent while the sub agent is still
   processing are not handled. Users must wait for `INPUT_REQUIRED` or `COMPLETED`.
-
-## Full reference
-
-<!-- TODO: Add references/a2a-agents-reference.md with complete configuration documentation -->

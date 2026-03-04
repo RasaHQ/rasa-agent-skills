@@ -261,7 +261,3 @@ actions:
   - action_ask_delivery_option
   - validate_phone_number
 ```
-
-## Full reference
-
-<!-- TODO: Add references/actions-reference.md with complete syntax documentation -->

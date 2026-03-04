@@ -342,7 +342,3 @@ view_medical_records:
 collect_patient_info:
   if: False
 ```
-
-## Full reference
-
-<!-- TODO: Add references/flows-reference.md with complete syntax documentation -->
