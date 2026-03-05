@@ -32,7 +32,7 @@ metadata:
 11. Connect follow-up flows via `link` if a separate process should start after.
 12. Ensure all referenced slots, responses, and actions exist in the domain
     (see "Ensure domain completeness").
-13. Validate the project.
+13. Validate the project (see "Fixing validation errors").
 
 ## Scoping a flow
 
@@ -360,3 +360,12 @@ failures.
 - Every custom action / validation action → `actions:`
   (see `rasa-writing-custom-actions`)
 - Rejection responses → `responses:`
+
+## Fixing validation errors
+
+When validation fails, preserve the user's **intent** — what the flow is supposed to
+accomplish. The flow steps themselves can change, but the intended behavior must not be
+lost.
+
+Never strip down a flow's intended behavior to make validation pass. If needed, fix the
+domain: slots, responses, and actions to support what the user asked for.
