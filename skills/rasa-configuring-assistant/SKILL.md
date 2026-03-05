@@ -159,6 +159,11 @@ nlg:
 The rephraser (`nlg: type: rephrase`) is covered by the `rasa-rephrasing-responses`
 skill.
 
+### MCP servers
+
+MCP server configuration (`mcp_servers` in `endpoints.yml`) is covered by the
+`rasa-configuring-mcp-server` skill.
+
 ### Silence handling
 
 Controls how long the assistant waits before assuming the user is silent. Only applies
@@ -168,7 +173,3 @@ to voice-stream channels (Twilio, Browser Audio, Genesys, Jambonz, Audiocodes).
 interaction_handling:
   global_silence_timeout: 7    # seconds, default: 7
 ```
-
-## Full reference
-
-<!-- TODO: Add references/config-reference.md with complete syntax documentation -->

@@ -136,7 +136,3 @@ responses:
           Suggested: {{suggested_response}}
           Rephrased:
 ```
-
-## Full reference
-
-<!-- TODO: Add references/slots-reference.md with complete syntax documentation -->

@@ -258,7 +258,3 @@ If custom actions are not stubbed, start the action server first:
 rasa run actions &
 rasa test e2e
 ```
-
-## Full reference
-
-<!-- TODO: Add references/e2e-reference.md with complete syntax documentation -->

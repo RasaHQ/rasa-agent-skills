@@ -287,7 +287,3 @@ vector_store:
   api_key: ${SEARCH_API_KEY}
   collection: my_collection
 ```
-
-## Full reference
-
-<!-- TODO: Add references/enterprise-search-reference.md with complete configuration documentation -->
