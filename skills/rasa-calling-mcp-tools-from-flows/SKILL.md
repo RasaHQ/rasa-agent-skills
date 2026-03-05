@@ -22,6 +22,24 @@ MCP servers must be defined in `endpoints.yml` before calling their tools. See t
 
 This feature is in **beta** and available starting from **Rasa 3.14.0**.
 
+## When to use MCP vs a custom action
+
+Use an MCP tool call when:
+
+- The tool already exists on an MCP server
+- You just need to pass slot values in and store results back
+- No complex logic around the call (branching, retries, multiple sequential API calls)
+
+Use a custom action instead when:
+
+- You need complex business logic (multiple API calls, conditionals, error handling)
+- You need access to the full tracker (conversation history, events, sender ID)
+- You need to send custom messages via the dispatcher
+- The data transformation can't be expressed in a Jinja2 output mapping
+- The external API isn't exposed via MCP
+
+See `rasa-writing-custom-actions` for custom action guidance.
+
 ## Workflow
 
 1. Ensure the MCP server is defined in `endpoints.yml`

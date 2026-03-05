@@ -23,6 +23,10 @@ conversation proceeds (branching, conditions, collect steps). Actions do the *ra
 flows to use. Keep each action focused on one responsibility — `action_search_products`
 searches, `action_place_order` places an order.
 
+If all you need is a simple API call with slot-based input/output mappings and the API
+is available on an MCP server, consider using an MCP tool call instead — see 
+`rasa-calling-mcp-tools-from-flows`.
+
 ## Workflow
 
 1. Identify what raw work the flow needs — API call, database query, computation.
