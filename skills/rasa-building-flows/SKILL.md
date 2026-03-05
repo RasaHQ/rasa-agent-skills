@@ -30,7 +30,9 @@ metadata:
    (see "Branching and conditions").
 10. Extract reusable sub-tasks into child flows via `call` (see "Connecting flows").
 11. Connect follow-up flows via `link` if a separate process should start after.
-12. Validate the project.
+12. Ensure all referenced slots, responses, and actions exist in the domain
+    (see "Ensure domain completeness").
+13. Validate the project.
 
 ## Scoping a flow
 
@@ -342,3 +344,19 @@ view_medical_records:
 collect_patient_info:
   if: False
 ```
+
+## Ensure domain completeness
+
+Every element a flow references must be defined in the domain (`domain.yml` or split
+domain files). After writing or editing a flow, walk through each step and verify the
+items below are present. Missing entries cause validation errors or silent runtime
+failures.
+
+- Every slot used in the flow → `slots:`
+  (see `rasa-managing-slots`)
+- Every `collect: slot_name` → `utter_ask_{slot_name}` in `responses:`
+  (see `rasa-writing-responses`)
+- Every `action: utter_*` step → matching entry in `responses:`
+- Every custom action / validation action → `actions:`
+  (see `rasa-writing-custom-actions`)
+- Rejection responses → `responses:`
