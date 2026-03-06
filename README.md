@@ -4,6 +4,21 @@ A collection of skills for AI coding agents working with [Rasa CALM](https://ras
 
 Skills follow the [Agent Skills](https://agentskills.io/) format.
 
+## Versioning
+
+Each skill has two version fields in its frontmatter:
+
+- **`version`** — the version of the skill package itself
+  (follows [semver](https://semver.org/), e.g. `"0.1.0"`).
+- **`rasa_version`** — the minimum Rasa Pro version required for the features the skill
+  describes, expressed as a semver range (e.g. `">=3.14.0"`).
+
+When a skill is updated with content that covers a feature introduced in a newer Rasa
+release, bump `rasa_version` to match. For example, if a skill gains a section about a
+feature added in Rasa 3.17.0, update `rasa_version` from `">=3.14.0"` to `">=3.17.0"`.
+If a feature is later removed or replaced, add an upper bound
+(e.g. `">=3.14.0,<3.17.0"`).
+
 ## Available Skills
 
 ### rasa-building-flows
