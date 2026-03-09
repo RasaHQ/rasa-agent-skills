@@ -8,7 +8,7 @@ license: Apache-2.0
 metadata:
   author: rasa
   version: "0.1.0"
-  rasa_version: ">=3.12.0"
+  rasa_version: ">=3.18.0"
   docs-url: https://rasa.com/docs/pro/testing/evaluating-assistant
 ---
 

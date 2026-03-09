@@ -8,7 +8,7 @@ license: Apache-2.0
 metadata:
   author: rasa
   version: "0.1.0"
-  rasa_version: ">=3.9.0"
+  rasa_version: ">=3.17.0"
   docs-url: https://rasa.com/docs/reference/primitives/flows/
 ---
 

@@ -8,7 +8,7 @@ license: Apache-2.0
 metadata:
   author: rasa
   version: "0.1.0"
-  rasa_version: ">=3.14.0"
+  rasa_version: ">=3.16.100"
   docs-url: https://rasa.com/docs/pro/build/mcp-integration
 ---
 
