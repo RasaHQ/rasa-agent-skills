@@ -75,7 +75,7 @@ agent:
 
 configuration:
   llm:                                   # optional, defaults to GPT-4o
-    model-group: openai-gpt-4o
+    model_group: openai-gpt-4o
   prompt_template: sub_agents/stock_explorer/prompt_template.jinja2  # optional
   timeout: 30                            # optional, seconds before timing out
   max_retries: 3                         # optional, MCP connection retries
