@@ -161,17 +161,17 @@ Specify `utter_source` to target a specific component.
         ground_truth: "Items can be returned within 30 days of purchase."
 ```
 
-The LLM Judge model is configured in `conftest.yml` at the project root (defaults to
-OpenAI `gpt-4.1-mini`):
+The LLM Judge model is configured in `conftest.yml` at the project root (if not
+specified, Rasa falls back to its default model):
 
 ```yaml
 llm_judge:
   llm:
-    provider: openai
-    model: "gpt-4.1-mini-2025-04-14"
+    provider: <your-provider>           # e.g. openai, azure, self-hosted
+    model: <your-llm-model>
   embeddings:
-    provider: openai
-    model: "text-embedding-3-large"
+    provider: <your-provider>
+    model: <your-embedding-model>
 ```
 
 ## Fixtures

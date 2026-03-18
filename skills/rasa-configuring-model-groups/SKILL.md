@@ -55,25 +55,25 @@ The simplest setup — one deployment per group:
 
 ```yaml
 model_groups:
-  - id: openai_llm
+  - id: my_llm
     models:
-      - provider: openai
-        model: gpt-4o-2024-11-20
+      - provider: openai                  # or azure, self-hosted, etc.
+        model: <your-llm-model>
 
-  - id: openai_embeddings
+  - id: my_embeddings
     models:
-      - provider: openai
-        model: text-embedding-3-large
+      - provider: openai                  # or azure, huggingface_local, etc.
+        model: <your-embedding-model>
 ```
 
 To switch providers, change `provider` and add any required provider-specific settings:
 
 ```yaml
 model_groups:
-  - id: azure_llm
+  - id: my_llm
     models:
       - provider: azure
-        deployment: rasa-gpt-4
+        deployment: <your-deployment-name>
         api_base: https://my-azure-instance/
         api_version: "2024-02-15-preview"
         api_key: ${AZURE_API_KEY}
@@ -85,20 +85,21 @@ Place multiple deployments in the same group for load balancing, failover, or la
 optimization. Add a `router` block to control distribution.
 
 Keep deployments in a group on the same underlying model — mixing fundamentally
-different models (e.g. GPT-3.5 vs GPT-4) leads to unpredictable behavior. Router
-settings are per-group and independent — each group can use a different strategy.
+different models (e.g. a small model vs a large model) leads to unpredictable
+behavior. Router settings are per-group and independent — each group can use a
+different strategy.
 
 ```yaml
 model_groups:
   - id: azure_llm
     models:
       - provider: azure
-        deployment: gpt-4-france
+        deployment: my-deployment-france
         api_base: https://azure-france/
         api_version: "2024-02-15-preview"
         api_key: ${AZURE_KEY_FRANCE}
       - provider: azure
-        deployment: gpt-4-canada
+        deployment: my-deployment-canada
         api_base: https://azure-canada/
         api_version: "2024-02-15-preview"
         api_key: ${AZURE_KEY_CANADA}
@@ -209,10 +210,10 @@ model_groups:
   - id: litellm_proxy_llm
     models:
       - provider: litellm_proxy
-        model: gpt-4-instance-1
+        model: <your-model-instance-1>
         api_base: "http://localhost:4000"
       - provider: litellm_proxy
-        model: gpt-4-instance-2
+        model: <your-model-instance-2>
         api_base: "http://localhost:4000"
     router:
       routing_strategy: least-busy

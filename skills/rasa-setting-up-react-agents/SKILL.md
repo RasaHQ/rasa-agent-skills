@@ -74,8 +74,8 @@ agent:
   description: "Agent that helps users research and analyze stock options"
 
 configuration:
-  llm:                                   # optional, defaults to GPT-4o
-    model_group: openai-gpt-4o
+  llm:                                   # optional, default model is provided by Rasa codebase
+    model_group: my_llm
   prompt_template: sub_agents/stock_explorer/prompt_template.jinja2  # optional
   timeout: 30                            # optional, seconds before timing out
   max_retries: 3                         # optional, MCP connection retries
@@ -95,7 +95,7 @@ connections:
 |-----|----------|-------------|
 | `agent.name` | yes | Unique name — must not clash with any flow ID or other sub agent |
 | `agent.description` | yes | Brief description of the agent's capabilities |
-| `configuration.llm` | no | LLM to power the agent's reasoning. Defaults to GPT-4o |
+| `configuration.llm` | no | LLM to power the agent's reasoning. Has a default model |
 | `configuration.prompt_template` | no | Path to a Jinja2 prompt template |
 | `configuration.timeout` | no | Seconds before timing out. No timeout by default |
 | `configuration.max_retries` | no | MCP connection retry attempts. Default: 3 |
