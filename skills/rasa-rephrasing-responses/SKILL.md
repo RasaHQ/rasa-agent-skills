@@ -41,13 +41,13 @@ altering meaning.
 nlg:
   type: rephrase
   llm:
-    model_group: gpt-4o-2024-11-20-openai-model  # optional, defaults to gpt-4o-2024-11-20
+    model_group: my_llm               # optional, defaults to the default model
 
 model_groups:
-  - id: gpt-4o-2024-11-20-openai-model
+  - id: my_llm
     models:
-      - provider: openai
-        model: gpt-4o-2024-11-20
+      - provider: <your-provider>     # e.g. openai, azure, self-hosted
+        model: <your-llm-model>
         temperature: 0.3              # 0.0–2.0, default 0.3
 ```
 

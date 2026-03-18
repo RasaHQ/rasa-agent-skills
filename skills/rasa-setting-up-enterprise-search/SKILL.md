@@ -95,13 +95,13 @@ Corresponding model groups in `endpoints.yml`:
 model_groups:
   - id: enterprise_search_llm
     models:
-      - provider: openai
-        model: gpt-4.1-mini-2025-04-14
+      - provider: <your-provider>                    # e.g. openai, azure, self-hosted
+        model: <your-llm-model>
 
   - id: enterprise_search_embeddings
     models:
-      - provider: openai
-        model: text-embedding-3-large               # default ingestion model
+      - provider: <your-provider>
+        model: <your-embedding-model>                # must match ingestion model
 ```
 
 Extractive search Q&A ingestion format — `page_content` holds the question

@@ -59,10 +59,10 @@ embeddings, and input limits:
 pipeline:
   - name: CompactLLMCommandGenerator
     llm:
-      model_group: openai_llm              # references model_groups in endpoints.yml
+      model_group: my_llm                  # references model_groups in endpoints.yml
     flow_retrieval:
       embeddings:
-        model_group: openai_embeddings     # references model_groups in endpoints.yml
+        model_group: my_embeddings         # references model_groups in endpoints.yml
     user_input:
       max_characters: 420
 ```
@@ -117,15 +117,15 @@ multi-deployment routing, failover, and self-hosted models.
 
 ```yaml
 model_groups:
-  - id: openai_llm
+  - id: my_llm
     models:
-      - provider: openai
-        model: gpt-4o-2024-11-20
+      - provider: <your-provider>       # e.g. openai, azure, self-hosted
+        model: <your-llm-model>
 
-  - id: openai_embeddings
+  - id: my_embeddings
     models:
-      - provider: openai
-        model: text-embedding-3-large
+      - provider: <your-provider>
+        model: <your-embedding-model>
 ```
 
 ### Action endpoint
