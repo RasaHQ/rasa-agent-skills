@@ -74,7 +74,7 @@ model_groups:
     models:
       - provider: azure
         deployment: <your-deployment-name>
-        api_base: https://my-azure-instance/
+        api_base: https://<your-azure-instance>/
         api_version: "2024-02-15-preview"
         api_key: ${AZURE_API_KEY}
 ```
@@ -94,12 +94,12 @@ model_groups:
   - id: azure_llm
     models:
       - provider: azure
-        deployment: my-deployment-france
+        deployment: <your-deployment-france>
         api_base: https://azure-france/
         api_version: "2024-02-15-preview"
         api_key: ${AZURE_KEY_FRANCE}
       - provider: azure
-        deployment: my-deployment-canada
+        deployment: <your-deployment-canada>
         api_base: https://azure-canada/
         api_version: "2024-02-15-preview"
         api_key: ${AZURE_KEY_CANADA}

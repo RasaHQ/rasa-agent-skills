@@ -286,5 +286,5 @@ Connection parameters in `endpoints.yml` are passed to `connect` via `config.kwa
 # endpoints.yml
 vector_store:
   api_key: ${SEARCH_API_KEY}
-  collection: my_collection
+  collection: <your-collection-name>
 ```

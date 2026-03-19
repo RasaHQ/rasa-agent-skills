@@ -151,7 +151,7 @@ static templates from the domain. The endpoint must serve a `/nlg` path.
 ```yaml
 nlg:
   url: http://localhost:5055/nlg
-  # token: "my_authentication_token"        # optional token auth
+  # token: "<your-authentication-token>"     # optional token auth
   # basic_auth:                             # or basic auth
   #   username: user
   #   password: pass
