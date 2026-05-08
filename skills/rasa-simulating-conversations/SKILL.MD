@@ -128,13 +128,21 @@ Use Glob("eval/conftest.yml") to check.
 simulation:
   llm:
     provider: openai       # openai | anthropic | azure | ...
-    model: gpt-4o
+    model: gpt-5.1
+    timeout: 30
+    reasoning_effort: "none"
+    cache:
+      no-cache: true
 
 # LLM used to evaluate success criteria (LLM judge)
 evaluation:
   llm:
     provider: openai
-    model: gpt-4o
+    model: gpt-5.1
+    timeout: 30
+    reasoning_effort: "none"
+    cache:
+      no-cache: true
   # Prompt overrides — paths are relative to the project root.
   # Use these to customise how the judge scores conversations.
   # prompt_template: prompt_templates/judge.jinja2              # overrides text/criteria judge (variables: simulation_context, criteria_text, transcript)
