@@ -114,6 +114,20 @@ Notes:
   - It checks **order only** (each step after the previous, not necessarily
     adjacent), not slot/response values.
   - `generative_response_is_relevant` and `pattern_clarification_contains` assertions are only relevant for single-turn knowledge-based questions.
+- **Prefer structural assertions over `bot_uttered` / `bot_did_not_utter` with
+  `text_matches`.** Assertions should verify *business logic*, not wording — the
+  bot rephrases every run, so regexes over response text are both brittle (false
+  failures on wording drift) and weak (they don't prove the underlying behavior).
+  Express the intent with structural checks instead: a flow result
+  (`flow_completed` / `flow_cancelled`), an action (`action_executed`, including
+  `utter_*`), a slot (`slot_was_set` / `slot_was_not_set`), or ordering
+  (`sequencing`). For "the bot must not reveal X", prefer
+  `bot_did_not_utter: {utter_name: ...}` or assert the relevant flow never
+  completed, rather than a regex over the wording.
+  - Use `text_matches` **only when a specific literal token must appear verbatim
+    and that token is the business logic** — e.g. a product or subscription-plan
+    name, an account/reference number, a URL, or a code. Do not use it to check
+    generic phrasing like "not found", "sorry", or "your bill is".
 ---
 
 ## Step-by-step workflow
