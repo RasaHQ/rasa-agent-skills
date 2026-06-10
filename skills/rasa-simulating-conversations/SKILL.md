@@ -2,6 +2,7 @@
 name: rasa-simulating-conversations
 description: >
   Use when a user wants to evaluate or test a Rasa assistant using the eval scenario framework — at any stage of the process: setting up the evaluation infrastructure for the first time, deciding which scenario types to cover for a flow, writing or generating scenario YAML files, learning about supported assertion types or how to write good success criteria, running goal-driven simulations where an LLM plays the user role against a live Rasa bot, or analyzing whether existing scenarios are comprehensive. Covers both the authoring side ("write scenarios", "generate evals", "help me write criteria") and the execution side ("simulate a conversation", "run my eval scenarios"). Not for scripted end-to-end tests, unit tests, NLU training, or general Rasa bot development.
+license: Apache-2.0
 metadata:
   author: rasa
   version: "0.1.0"
@@ -82,22 +83,26 @@ scenario:
 ```
 
 ### Supported assertion types
+
 Every assertion is a single-key item. These are the ONLY supported types
 (validated by `validate_scenario`); anything else fails schema validation.
-| Type                              | Example                                                          | What it checks                                                              |
-|-----------------------------------|-----------------------------------------------------------------|----------------------------------------------------------------------------|
-| `flow_started`                    | `flow_started: {flow_ids: [transfer_money], operator: any}`     | one/all of these flows started                                             |
-| `flow_completed`                  | `flow_completed: {flow_id: transfer_money}`                     | flow completed (optionally at `flow_step_id`)                               |
-| `flow_cancelled`                  | `flow_cancelled: {flow_id: transfer_money}`                     | flow was cancelled                                                          |
-| `action_executed`                 | `action_executed: action_submit_transfer`                      | this action or `utter_*` ran                                              |
-| `slot_was_set`                    | `slot_was_set: [{name: recipient, value: "John"}]`             | slot set (to `value` if given) at any point — checked over event history    |
-| `slot_was_not_set`                | `slot_was_not_set: [{name: recipient}]`                        | slot was never set (to `value` if given)                                    |
-| `bot_uttered`                     | `bot_uttered: {text_matches: "balance"}`                       | bot sent a response matching `utter_name` / `text_matches` (regex) / `buttons` |
-| `bot_did_not_utter`               | `bot_did_not_utter: {text_matches: "I don't know"}`            | bot did not send such a response                                            |
-| `generative_response_is_relevant` | `generative_response_is_relevant: {threshold: 0.7}`            | LLM-judged relevance of the generated reply ≥ threshold                     |
-| `generative_response_is_grounded` | `generative_response_is_grounded: {threshold: 0.7}`            | LLM-judged grounding of the generated reply ≥ threshold                     |
-| `pattern_clarification_contains`  | `pattern_clarification_contains: [transfer_money, check_balance]` | clarification offered these flows                                     |
-| `sequencing`                      | see example above                                               | the listed steps occurred in order (values are plain strings)              |
+
+
+| Type                              | Example                                                           | What it checks                                                                 |
+| --------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `flow_started`                    | `flow_started: {flow_ids: [transfer_money], operator: any}`       | one/all of these flows started                                                 |
+| `flow_completed`                  | `flow_completed: {flow_id: transfer_money}`                       | flow completed (optionally at `flow_step_id`)                                  |
+| `flow_cancelled`                  | `flow_cancelled: {flow_id: transfer_money}`                       | flow was cancelled                                                             |
+| `action_executed`                 | `action_executed: action_submit_transfer`                         | this action or `utter_*` ran                                                   |
+| `slot_was_set`                    | `slot_was_set: [{name: recipient, value: "John"}]`                | slot set (to `value` if given) at any point — checked over event history       |
+| `slot_was_not_set`                | `slot_was_not_set: [{name: recipient}]`                           | slot was never set (to `value` if given)                                       |
+| `bot_uttered`                     | `bot_uttered: {text_matches: "balance"}`                          | bot sent a response matching `utter_name` / `text_matches` (regex) / `buttons` |
+| `bot_did_not_utter`               | `bot_did_not_utter: {text_matches: "I don't know"}`               | bot did not send such a response                                               |
+| `generative_response_is_relevant` | `generative_response_is_relevant: {threshold: 0.7}`               | LLM-judged relevance of the generated reply ≥ threshold                        |
+| `generative_response_is_grounded` | `generative_response_is_grounded: {threshold: 0.7}`               | LLM-judged grounding of the generated reply ≥ threshold                        |
+| `pattern_clarification_contains`  | `pattern_clarification_contains: [transfer_money, check_balance]` | clarification offered these flows                                              |
+| `sequencing`                      | see example above                                                 | the listed steps occurred in order (values are plain strings)                  |
+
 
 Notes:
 - `flow_started` uses **plural `flow_ids` + `operator`**; `flow_completed` /
@@ -168,7 +173,7 @@ evaluation:
       no-cache: true
   # Prompt overrides — paths are relative to the project root.
   # Use these to customise how the judge scores conversations.
-  # prompt_template: prompt_templates/judge.jinja2              # overrides text/criteria judge (variables: simulation_context, criteria_text, transcript)
+  # prompt_template: prompt_templates/judge.jinja2              # overrides the criteria judge (variables: criteria_text, transcript, event_ledger)
 
 ```
 
@@ -198,7 +203,7 @@ The `--inspect` flag loads the Inspector in the same process, so a single server
 
 - If `agent_reloaded: true` — the server picked up the new model, proceed to simulate.
 - If `agent_reloaded: false` — the server is not running. Do NOT attempt workarounds (e.g. SlotSet in custom actions).
-  Tell the user:
+Tell the user:
   ```
   The model was trained but the server is not running. Start it with:
     rasa run --enable-api --inspect --cors "*"
@@ -264,11 +269,18 @@ what the bot should do here (that belongs in `criteria` / `assertions`).
 bot's connected backend / mock data for even the happy path to succeed — e.g. a
 valid password or PIN, an existing order number, a known account or phone number.
 Do **not** invent these blindly. If a scenario is meant to *succeed* and depends
-on a value you cannot confirm is valid test data, ask the user for it before
-running (e.g. *"What's a valid test order number / username / password I should
-use?"*). For deviation scenarios that are *supposed* to fail (wrong password,
-unknown order), inventing a clearly-invalid value is correct — there the "not
-found" response is the expected behavior.
+on a value you cannot confirm is valid test data:
+1. **First check the existing scenarios** in `eval/scenarios/*.yml` — a working
+   happy-path scenario usually already embeds valid test data in its
+   `simulation_context` or `initial_slots` (e.g. a phone number + password that
+   authenticate). Reuse those known-good values instead of guessing.
+2. Only if no existing scenario provides them, **ask the user** before running
+   (e.g. *"What's a valid test order number / username / password I should
+   use?"*).
+
+For deviation scenarios that are *supposed* to fail (wrong password, unknown
+order), inventing a clearly-invalid value is correct — there the "not found"
+response is the expected behavior.
 
 ### Writing success criteria — bot-side deal-breakers
 
@@ -291,6 +303,13 @@ found" response is the expected behavior.
 - **Correct behind-the-scenes tool calls** — e.g.
   `The agent calls the billing-lookup tool before quoting any figures`
   (assert it deterministically when you can — see below).
+- **Required system behavior / result production** — that the bot actually
+  *performed* the action, framed as what the **bot did** (the judge can verify
+  this against the runtime event ledger of tool calls / flows / actions), e.g.
+  `The agent retrieves the account data via its tools and presents the breakdown
+  it returned`. Frame it as the bot's action, **not** as what the user got —
+  *"the agent retrieves and presents X"* (keep) vs *"the user was able to see X"*
+  (that's the outcome — exclude; see below).
 - **Flow adherence** — the required handling of a path, e.g.
   `After three failed password attempts the agent stops the verification attempts and tells the customer it cannot proceed`.
   (Whether it *then offers a callback* is an optional nicety — leave it out.)
@@ -301,9 +320,15 @@ found" response is the expected behavior.
 
 **Do NOT write criteria for (these flicker or belong elsewhere):**
 
-- **User outcome / satisfaction / resolution** → that's `task_completion`. This
-  includes *"the agent provides/answers the billing information the user asked
-  for"* — receiving the answer is the user outcome, not a bot deal-breaker.
+- **User outcome / satisfaction / resolution** → that's `task_completion`. The
+  test is *whose* end state the criterion is about. If it is about the **user** —
+  *"the user got their answer / was able to view X / was satisfied / the issue
+  was resolved"* — exclude it: it is scored from the transcript by the separate
+  (non-gating) `task_completion` metric and can fail for reasons outside the
+  bot's control (user leaves, empty backend). **Reframing from the bot's side
+  keeps it**, though: *"the agent retrieved X and presented it"* is a
+  system-behavior criterion the judge checks against the event ledger — write
+  that instead of *"the user received X"*.
 - **Offering alternatives / callbacks / escalation as a fallback** — "offers a
   callback", "offers an alternative after failure". These are UX choices about
   the user's resolution path, not non-negotiable behavior. (A *mandatory*
@@ -326,6 +351,37 @@ found" response is the expected behavior.
   assertions don't flicker. Reserve `criteria` for non-negotiable behavior that
   still needs an LLM to judge (e.g. "explained *why* it could not proceed").
 
+**Before you keep a criterion, run this self-check.** Answer each — any "yes"
+before the last means rewrite it as an assertion, move it to the right place, or
+drop it:
+
+1. *Could this fail even though the bot did everything correctly?* (wording
+   varied, the user stopped early, a step the bot may legitimately skip) → drop.
+2. *Is it about the **user's** end state — what they received, felt, or whether
+   they were satisfied / resolved?* → that's `task_completion`, not a criterion →
+   drop. (But if the point is really a **bot action**, reframe it from the bot's
+   side — *"the agent retrieved and presented X"* instead of *"the user got X"* —
+   and keep it.)
+3. *Is it an offer of help, an alternative, an escalation, or a fallback?* →
+   drop, unless it is a **mandated** step; then phrase it as the required
+   behavior under a trigger ("when `<condition>`, the agent `<does X>`"), never
+   as "offers …".
+4. *Could a machine check it from the tracker* (a tool call, a slot value, a
+   flow that started/completed, an ordering)? → move it to `assertions`.
+5. *Does it name a non-negotiable behavior that genuinely needs a human-like
+   judgment of the bot's conduct?* → **keep it.**
+
+**Phrasing red-flags.** These openings almost always signal an outcome, a
+nicety, or something assertable rather than a deal-breaker — re-check any
+criterion that starts like one: *"provides / gives / answers …"*, *"offers …"*,
+*"successfully / is able to …"*, *"ensures the user …"*, *"makes the user feel
+…"*, *"asks if the user wants …"*. Prefer constraints framed as *"the agent does
+**not** …"* or *"before `<X>`, the agent `<Y>`"*.
+
+**Keep the set small.** A few strong deal-breakers beat a long list. If a
+scenario has many criteria you are probably restating the goal or adding
+niceties — cut back to the ones whose failure clearly means the bot is broken.
+
 > Rule of thumb: every criterion must be a **deal-breaker** — if it fails, the
 > bot needs fixing. If a criterion could fail while the bot did everything right
 > (wording drift, where the conversation stopped, an optional nicety), or if it
@@ -345,6 +401,7 @@ Before the first call, generate a shared experiment ID by running this Bash comm
 ```bash
 date +%Y-%m-%d_%H-%M-%S
 ```
+
 Use the output as the `experiment_id` for all `evaluate_agent` calls. If you encounter a permission error, use the currentDate from the system context.
 
 Run scenarios sequentially using `evaluate_agent`, passing the same `experiment_id`
@@ -402,16 +459,19 @@ the scenario was meant to **succeed**, this is almost certainly a **test-data
 problem, not a bot bug**. In that case:
 
 1. Do **not** report it as a bot failure and do **not** edit the bot / flow.
-2. Pause and ask the user for valid mock values, naming exactly what you need and
-   which scenario it's for, e.g.:
+2. **First check the other `eval/scenarios/*.yml`** for known-good values — a
+   passing happy-path scenario may already carry valid credentials/IDs you can
+   reuse. If you find them, update the failing scenario and re-run without asking.
+3. Otherwise, pause and ask the user for valid mock values, naming exactly what
+   you need and which scenario it's for, e.g.:
    ```
    The happy-path run for "<scenario name>" failed because the order number I
    used (12345) wasn't found in the backend. What's a valid test order number /
    username / password I should use? I'll update the scenario and re-run.
    ```
-3. Once the user provides them, update the affected `simulation_context` (and any
-   `initial_slots` / assertions that hard-code the value), then re-run that
-   scenario with the same `experiment_id`.
+4. Once you have valid values (from an existing scenario or the user), update the
+   affected `simulation_context` (and any `initial_slots` / assertions that
+   hard-code the value), then re-run that scenario with the same `experiment_id`.
 
 Only scenarios that are *designed* to fail (wrong password, unknown order) keep
 invalid values — there, assert the "not found" / failure behavior instead of
@@ -430,25 +490,29 @@ If the user asks to fix a failure:
 
 ## Config reference
 
-| Field                            | Required   | Default                      |
-|----------------------------------|------------|------------------------------|
-| `simulation.llm`                 | Yes        | —                            |
-| `evaluation.llm`                 | Yes        | —                            |
-| WebSocket URL                    | No         | Derived from Rasa server URL |
-| Sample rate, turn timing         | No         | Built-in defaults            |
+
+| Field                    | Required | Default                      |
+| ------------------------ | -------- | ---------------------------- |
+| `simulation.llm`         | Yes      | —                            |
+| `evaluation.llm`         | Yes      | —                            |
+| WebSocket URL            | No       | Derived from Rasa server URL |
+| Sample rate, turn timing | No       | Built-in defaults            |
+
 
 ---
 
 ## Common issues
 
-| Symptom                                    | Likely cause                                 | Fix                                                                                |
-|--------------------------------------------|----------------------------------------------|------------------------------------------------------------------------------------|
-| `Scenario file not found`                  | Wrong path or missing file                   | Check with Glob using the right pattern (see Step 2), create file if needed        |
-| Bot returns empty responses (text)         | Rasa not running or not trained              | Ask user to run `rasa run --enable-api --inspect --credentials credentials.yml`    |
-| `response_contains_any` fails unexpectedly | Bot uses different phrasing                  | Read the transcript in the result file, update assertions or flow response         |
-| Simulation hits max turns (20)             | Bot stuck in loop or user simulator confused | Read transcript, check if bot keeps re-asking same question                        |
-| All criteria pass but assertions fail      | Slot not being filled                        | Check tracker slots in result file, verify slot mappings in domain                 |
+
+| Symptom                                             | Likely cause                                                   | Fix                                                                                                                      |
+| --------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `Scenario file not found`                           | Wrong path or missing file                                     | Check with Glob using the right pattern (see Step 2), create file if needed                                              |
+| Bot returns empty responses (text)                  | Rasa not running or not trained                                | Ask user to run `rasa run --enable-api --inspect --credentials credentials.yml`                                          |
+| `response_contains_any` fails unexpectedly          | Bot uses different phrasing                                    | Read the transcript in the result file, update assertions or flow response                                               |
+| Simulation hits max turns (20)                      | Bot stuck in loop or user simulator confused                   | Read transcript, check if bot keeps re-asking same question                                                              |
+| All criteria pass but assertions fail               | Slot not being filled                                          | Check tracker slots in result file, verify slot mappings in domain                                                       |
 | Happy-path run fails with "not found" / auth errors | Mock value (order no., account, password) isn't in the backend | Test-data problem, not a bot bug — ask the user for valid test data, update `simulation_context`/`initial_slots`, re-run |
+
 
 ---
 
