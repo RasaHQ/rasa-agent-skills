@@ -193,6 +193,25 @@ Configure ReAct sub agents that dynamically select MCP tools based on conversati
 - Custom agent class (`MCPOpenAgent`, `MCPTaskAgent`)
 - Adding custom Python tools (`get_custom_tool_definitions`)
 
+### rasa-simulating-conversations
+
+Evaluate and test a Rasa assistant using goal-driven simulation. Covers scenario authoring, assertion types, success criteria, running LLM-driven user simulators against a live bot, and analyzing results. Not for scripted E2E tests.
+
+**Use when:**
+- Setting up eval/simulation infrastructure (`eval/conftest.yml`)
+- Writing or generating scenario YAML files for a flow
+- Choosing which scenario types to cover (happy path, deviations, edge cases)
+- Running goal-driven simulations where an LLM plays the user role
+- Analyzing simulation results, assertions, and success criteria
+
+**Topics covered:**
+- Scenario YAML format (`simulation_context`, `setup`, `goals`)
+- Assertion types (`flow_started`, `slot_was_set`, `action_executed`, `sequencing`, etc.)
+- Success criteria vs deterministic assertions
+- `eval/conftest.yml` configuration (simulation and evaluation LLMs)
+- Scenario validation and execution via MCP tools
+- Result analysis and Inspector integration
+
 ### rasa-writing-custom-actions
 
 Write custom actions in Python using the Rasa SDK. Covers API calls from flows, slot validation actions, and dynamic ask actions.
@@ -251,7 +270,7 @@ Write response templates in Rasa CALM domain files. Covers variations, buttons, 
 
 ## Installation
 
-TODO
+See: [Documentation - Rasa MCP Tools](https://rasa.com/docs/pro/installation/rasa-mcp-tools/)
 
 ## Usage
 
