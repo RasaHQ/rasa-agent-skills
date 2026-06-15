@@ -118,7 +118,8 @@ Notes:
   - `flow_interrupted` is available **only** inside `sequencing`.
   - It checks **order only** (each step after the previous, not necessarily
     adjacent), not slot/response values.
-  - `generative_response_is_relevant` and `pattern_clarification_contains` assertions are only relevant for single-turn knowledge-based questions.
+  - `generative_response_is_relevant` assertions are only relevant for single-turn knowledge-based questions.
+  - `pattern_clarification_contains` scans the full event list for clarification offers and works in multi-turn scenarios too.
 - **Prefer structural assertions over `bot_uttered` / `bot_did_not_utter` with
   `text_matches`.** Assertions should verify *business logic*, not wording — the
   bot rephrases every run, so regexes over response text are both brittle (false
@@ -161,8 +162,10 @@ simulation:
     reasoning_effort: "none"
     cache:
       no-cache: true
+  # Prompt template override — path is relative to the project root.
+  # simulated_user_prompt: prompt_templates/my_simulated_user_prompt.jinja2    # (variable: simulation_context)
 
-# LLM used to evaluate success criteria (LLM judge)
+# LLM used to evaluate success criteria and quality metrics (LLM judge)
 evaluation:
   llm:
     provider: openai
@@ -171,9 +174,10 @@ evaluation:
     reasoning_effort: "none"
     cache:
       no-cache: true
-  # Prompt overrides — paths are relative to the project root.
+  # Prompt templates overrides — paths are relative to the project root.
   # Use these to customise how the judge scores conversations.
-  # prompt_template: prompt_templates/judge.jinja2              # overrides the criteria judge (variables: criteria_text, transcript, event_ledger)
+  # criteria_judge_prompt: prompt_templates/my_criteria_judge_prompt.jinja2    # (variables: criteria_text, transcript, event_ledger)
+  # metrics_judge_prompt: prompt_templates/metrics_judge.jinja2      # (variable: transcript)
 
 ```
 
@@ -214,9 +218,9 @@ Tell the user:
 ### Step 3 - Ensure MCP server is running
 
 Verify that you have access to the following tools: `list_project_flow_definitions`, `validate_scenario` and `evaluate_agent`.
-If one of the tools is not avaiable, report which tool is missing to the user and stop:
+If one of the tools is not available, report which tool is missing to the user and stop:
   ```
-  The following required MCP tools are not avaiable: (list unavaiable tools here)
+  The following required MCP tools are not available: (list unavailable tools here)
   Please make sure that Rasa MCP tools are installed and running. Run the setup wizard from your project root: `rasa tools init`. See the following page for more details: https://rasa.com/docs/pro/installation/rasa-mcp-tools/
   ```
 
@@ -402,15 +406,16 @@ Before the first call, generate a shared experiment ID by running this Bash comm
 date +%Y-%m-%d_%H-%M-%S
 ```
 
-Use the output as the `experiment_id` for all `evaluate_agent` calls. If you encounter a permission error, use the currentDate from the system context.
+Use the output as the `experiment_timestamp` for all `evaluate_agent` calls. If you encounter a permission error, use the currentDate from the system context.
 
-Run scenarios sequentially using `evaluate_agent`, passing the same `experiment_id`
-to every call.
+Run scenarios sequentially using `evaluate_agent`, passing the same `experiment_timestamp` to every call.
+Use `run_count` (1–10, default 1) to run a scenario multiple times — repeated runs surface flakiness in LLM-driven conversations.
 
 ```
 evaluate_agent(
   scenario_path="eval/scenarios/<scenario_type>.yml",
-  experiment_id=experiment_id
+  experiment_timestamp=experiment_timestamp,
+  run_count=3
 )
 ```
 
@@ -422,7 +427,7 @@ After the tool returns, summarize clearly:
 
 ```
 3/3 runs passed for "<scenario name>"
-Naturalness: 8.2/10 — responses were warm and clear.
+Quality (avg across runs): bot_quality 4.2/5 | helpfulness 4/5 | coherence 5/5 | repair_quality 4/5 | tone 4/5 | task_completion PASS
 Result file: eval/results/<timestamp>/<scenario-name>/run_N.txt
 ```
 
@@ -432,14 +437,14 @@ Result file: eval/results/<timestamp>/<scenario-name>/run_N.txt
 1/3 runs passed for "<scenario name>"
 
 Run 2 failed:
-  ✗ slot_filled: <slot_name>
+  ✗ slot_was_set: <slot_name>
        slot '<slot_name>' = None
 
 Run 3 failed:
   ✗ success_criteria: "Agent confirms the task was completed successfully"
        Bot did not send a confirmation message before ending the conversation.
 
-Naturalness: 6.1/10 — functional but robotic tone.
+Quality (avg across runs): bot_quality 2.8/5 | helpfulness 3/5 | coherence 3/5 | repair_quality 2/5 | tone 3/5 | task_completion FAIL
 Result file: eval/results/<timestamp>/<scenario-name>/run_N.txt
 ```
 
@@ -471,7 +476,7 @@ problem, not a bot bug**. In that case:
    ```
 4. Once you have valid values (from an existing scenario or the user), update the
    affected `simulation_context` (and any `initial_slots` / assertions that
-   hard-code the value), then re-run that scenario with the same `experiment_id`.
+   hard-code the value), then re-run that scenario with the same `experiment_timestamp`.
 
 Only scenarios that are *designed* to fail (wrong password, unknown order) keep
 invalid values — there, assert the "not found" / failure behavior instead of
@@ -491,12 +496,13 @@ If the user asks to fix a failure:
 ## Config reference
 
 
-| Field                    | Required | Default                      |
-| ------------------------ | -------- | ---------------------------- |
-| `simulation.llm`         | Yes      | —                            |
-| `evaluation.llm`         | Yes      | —                            |
-| WebSocket URL            | No       | Derived from Rasa server URL |
-| Sample rate, turn timing | No       | Built-in defaults            |
+| Field                                  | Required | Default          |
+| -------------------------------------- | -------- | ---------------- |
+| `simulation.llm`                       | Yes      | —                |
+| `evaluation.llm`                       | Yes      | —                |
+| `simulation.simulated_user_prompt`     | No       | Built-in default |
+| `evaluation.criteria_judge_prompt`     | No       | Built-in default |
+| `evaluation.metrics_judge_prompt`      | No       | Built-in default |
 
 
 ---
@@ -508,7 +514,7 @@ If the user asks to fix a failure:
 | --------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `Scenario file not found`                           | Wrong path or missing file                                     | Check with Glob using the right pattern (see Step 2), create file if needed                                              |
 | Bot returns empty responses (text)                  | Rasa not running or not trained                                | Ask user to run `rasa run --enable-api --inspect --credentials credentials.yml`                                          |
-| `response_contains_any` fails unexpectedly          | Bot uses different phrasing                                    | Read the transcript in the result file, update assertions or flow response                                               |
+| `bot_uttered` with `text_matches` fails unexpectedly | Bot uses different phrasing                                   | Read the transcript in the result file; prefer structural assertions (`flow_completed`, `action_executed`) over regex     |
 | Simulation hits max turns (20)                      | Bot stuck in loop or user simulator confused                   | Read transcript, check if bot keeps re-asking same question                                                              |
 | All criteria pass but assertions fail               | Slot not being filled                                          | Check tracker slots in result file, verify slot mappings in domain                                                       |
 | Happy-path run fails with "not found" / auth errors | Mock value (order no., account, password) isn't in the backend | Test-data problem, not a bot bug — ask the user for valid test data, update `simulation_context`/`initial_slots`, re-run |
@@ -518,7 +524,7 @@ If the user asks to fix a failure:
 
 ## Viewing a run in the Inspector
 
-After a simulation run, the result file includes an Inspector URL under `--- INSPECTOR URL ---`.
+After a simulation run, the result file includes an Inspector URL under `--- Inspector URL ---`.
 Open it directly in the browser — the conversation is already in the shared tracker store because the server was started
 with `--inspect`.
 
