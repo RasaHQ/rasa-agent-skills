@@ -190,15 +190,34 @@ then say "continue" and I'll pick up from here.
 
 Do not proceed until the user confirms.
 
-### Step 2 — Ensure the bot is trained and running
+### Step 2 — Ensure the bot is trained and Rasa server is running
 
-Before simulating, verify the assistant is live:
+Before running simulation, verify `credentials.yml` and that the assistant is live.
+
+**Check `credentials.yml` first.** Read the file and confirm it contains both:
+
+- `rest:` — enables the REST input channel used by simulation and `talk_to_assistant`
+- `inspector:` — required when starting the server with `--inspect` (Inspector URLs in run reports)
+
+If either block is missing, tell the user which one(s) are absent and that they need to add them and restart the Rasa server — do **not** edit `credentials.yml` yourself unless the user explicitly asks you to. Stop and wait for confirmation before continuing.
+
+Then verify the bot responds:
 
 ```
 Use talk_to_assistant with message ["hello"] to verify the bot responds.
-If it fails, ask the user to run:
-  rasa run --enable-api --inspect --cors "*" --credentials credentials.yml
 ```
+
+**If the endpoint is not reachable** (connection refused, timeout, or similar) — the server is probably not running. Tell the user to start it:
+
+```
+The Rasa server doesn't appear to be running. Start it with:
+  rasa run --inspect --credentials credentials.yml
+Then say "continue" and I'll pick up from here.
+```
+
+Stop and wait — do not proceed until the user confirms the server is up.
+
+**If the call returns 404** — even with `rest:` present, the REST webhook may not be active yet (server started without `--credentials`, or not restarted after editing `credentials.yml`). Confirm `rest:` is in `credentials.yml`, then ask the user to restart with `--credentials credentials.yml` if needed.
 
 The `--inspect` flag loads the Inspector in the same process, so a single server is all that's needed — no separate
 `rasa inspect` command.
@@ -210,7 +229,7 @@ The `--inspect` flag loads the Inspector in the same process, so a single server
 Tell the user:
   ```
   The model was trained but the server is not running. Start it with:
-    rasa run --enable-api --inspect --cors "*"
+    rasa run --inspect
   Then say "re-run the simulation" and I'll continue from here.
   ```
   Stop and wait — do not re-run the simulation until the user confirms the server is up.
@@ -222,6 +241,7 @@ If one of the tools is not available, report which tool is missing to the user a
   ```
   The following required MCP tools are not available: (list unavailable tools here)
   Please make sure that Rasa MCP tools are installed and running. Run the setup wizard from your project root: `rasa tools init`. See the following page for more details: https://rasa.com/docs/pro/installation/rasa-mcp-tools/
+  Then restart your agentic IDE (e.g. Cursor or Claude Code) so it picks up the new MCP configuration, and say "continue" when you're ready.
   ```
 
 ### Step 4 — Find or create scenario files
@@ -259,6 +279,20 @@ Aim for a handful of high-value scenarios per flow — enough to exercise the
 happy path and the most likely real deviations — not one of every possible kind.
 At a minimum, include: the happy path, one where the user supplies a bad value
 (and corrects it), and one where the user changes their mind or stops partway.
+
+**Before writing `simulation_context`:** read `config.yml` and check whether it
+defines a `language` property. If it does, that value is the bot's main
+language — add **one short instruction** to every `simulation_context`, e.g.
+*"Speak in German."* or *"Speak in Spanish."*, so the user simulator knows which
+language to use for its **messages**. Without that instruction, the simulator
+defaults to English even when the bot expects another language.
+
+Write the rest of `simulation_context` in **English by default** — persona, goal,
+and test data stay in English. Do **not** translate the whole briefing into the
+bot language; only the simulator's spoken turns should follow the *"Speak in …"*
+instruction. Do **not** use `additional_languages` from `config.yml` unless the
+user explicitly asks for that. Only write `simulation_context` itself in another
+language if the user explicitly requests it.
 
 **Writing `simulation_context`:** write a short, natural briefing of *who the
 user is and what they want*, grounded in this flow and the plausible data they'd
@@ -398,6 +432,21 @@ For each scenario file that you created use the `validate_scenario` tool to vali
 assertion correctness. If validation fails, fix the scenario YAML according to the error message and re-run the scenario
 validation. You need to have a valid scenario files before proceeding to the next step and running the simulation.
 
+**Scenarios are stable after creation.** Once a scenario file is written and passes
+`validate_scenario`, treat it as a fixed test fixture. Do **not** silently change
+`simulation_context`, `criteria`, `assertions`, or `initial_slots` because an eval
+run failed — even when you think you know the fix (bad mock data, flaky criterion,
+assertion too strict, simulator wording drift). Instead:
+
+1. Report what failed and where.
+2. If a scenario edit seems warranted, explain **why** (with evidence from the
+   run report / transcript).
+3. Propose the exact change you would make.
+4. **Wait for user confirmation** before editing the scenario file or re-running.
+
+The only exception during initial authoring is fixing `validate_scenario` errors
+while the scenario is still being created in Step 4–5.
+
 ### Step 6 — Run the simulation
 
 Before the first call, generate a shared experiment ID by running this Bash command so all scenarios from this session land in the same results folder:
@@ -466,15 +515,17 @@ problem, not a bot bug**. In that case:
 1. Do **not** report it as a bot failure and do **not** edit the bot / flow.
 2. **First check the other `eval/scenarios/*.yml`** for known-good values — a
    passing happy-path scenario may already carry valid credentials/IDs you can
-   reuse. If you find them, update the failing scenario and re-run without asking.
+   reuse. If you find them, **propose** updating the failing scenario with those
+   values and ask for confirmation before editing.
 3. Otherwise, pause and ask the user for valid mock values, naming exactly what
    you need and which scenario it's for, e.g.:
    ```
    The happy-path run for "<scenario name>" failed because the order number I
    used (12345) wasn't found in the backend. What's a valid test order number /
-   username / password I should use? I'll update the scenario and re-run.
+   username / password I should use? Once you confirm, I'll update the scenario
+   and re-run.
    ```
-4. Once you have valid values (from an existing scenario or the user), update the
+4. Only after the user confirms (and provides values if needed), update the
    affected `simulation_context` (and any `initial_slots` / assertions that
    hard-code the value), then re-run that scenario with the same `experiment_timestamp`.
 
@@ -486,9 +537,10 @@ asking for new data.
 
 If the user asks to fix a failure:
 
-1. Identify the root cause: wrong response template? missing slot handling? flow routing issue?
+1. Identify the root cause: wrong response template? missing slot handling? flow routing issue? bad scenario data?
 2. Point to the specific file and line
-3. Propose the fix
+3. Propose the fix — if the fix is a **scenario** change, explain why and get
+   confirmation before editing (same rule as after Step 5)
 4. After the fix, re-run the failing scenario to confirm it passes
 
 ---
@@ -513,7 +565,7 @@ If the user asks to fix a failure:
 | Symptom                                             | Likely cause                                                   | Fix                                                                                                                      |
 | --------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `Scenario file not found`                           | Wrong path or missing file                                     | Check with Glob using the right pattern (see Step 2), create file if needed                                              |
-| Bot returns empty responses (text)                  | Rasa not running or not trained                                | Ask user to run `rasa run --enable-api --inspect --credentials credentials.yml`                                          |
+| `talk_to_assistant` returns 404 / bot not reachable on REST webhook | `credentials.yml` missing the REST input channel | Read `credentials.yml` and check for a `rest:` block. If absent, tell the user to add it and restart the Rasa server — do **not** edit `credentials.yml` yourself unless the user explicitly asks you to. |
 | `bot_uttered` with `text_matches` fails unexpectedly | Bot uses different phrasing                                   | Read the transcript in the result file; prefer structural assertions (`flow_completed`, `action_executed`) over regex     |
 | Simulation hits max turns (20)                      | Bot stuck in loop or user simulator confused                   | Read transcript, check if bot keeps re-asking same question                                                              |
 | All criteria pass but assertions fail               | Slot not being filled                                          | Check tracker slots in result file, verify slot mappings in domain                                                       |
