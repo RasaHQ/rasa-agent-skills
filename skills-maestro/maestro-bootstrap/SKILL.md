@@ -11,7 +11,7 @@ engine: maestro
 rasa_version: ">=3.18"
 metadata:
   author: rasa
-  version: "0.1.1"
+  version: "0.1.2"
   docs-url: https://github.com/RasaHQ/maestro-docs
 ---
 
@@ -22,10 +22,16 @@ Maestro is Rasa's skills-based engine (Rasa Pro >= 3.18, beta). Agents are built
 and auto-discovered Python tools. Full docs: the `docs-url` above — fetch its
 `llms.txt` for an index, `llms-full.txt` for everything.
 
+**THE GATE RULE.** Steps 1-7 are conditional on Step 0 passing. If Step 0 fails,
+the runbook's deliverable changes: it becomes the report in Step 0 — sending
+that report IS completing this task successfully. Creating even one project
+file after a failed gate is a failed run, no matter how helpful it feels, no
+matter what the user asked to build, and no matter what already exists in the
+workspace.
+
 ## Step 0 — verify a Maestro-capable build exists (HARD GATE)
 
-Before asking the user for anything and before creating ANY file, check that a
-Rasa Pro version >= 3.18 is actually obtainable:
+Before asking the user for anything and before creating ANY file, run:
 
 ```bash
 curl -s https://pypi.org/pypi/rasa-pro/json | python3 -c "
@@ -38,24 +44,40 @@ def minor(version):
         return (0, 0)
 releases = json.load(sys.stdin)['releases']
 ok = sorted((v for v in releases if minor(v) >= (3, 18)), key=minor)
-print(ok[-1] if ok else 'NONE')"
+if ok:
+    print(ok[-1])
+else:
+    print('GATE FAILED: no Rasa Pro >= 3.18 exists on PyPI. Maestro is in '
+          'closed beta. Report to the user and end the run. Do not scaffold, '
+          'do not install an older version, do not run rasa commands.')
+    sys.exit(1)"
 ```
 
-**If this prints `NONE`, STOP HERE.** Maestro is in closed beta and no public
-build exists yet. Do NOT scaffold a Maestro project layout, do NOT install an
-older rasa-pro to "see if it works", and do NOT test `rasa train` on a < 3.18
-install — the Maestro file layout (`agent.yml`, `skills/`) is not valid on
-earlier versions and every downstream step will fail confusingly. Tell the user:
+**Exit code 0** (prints a version): continue to Step 1.
 
-1. Maestro requires Rasa Pro >= 3.18, which is not publicly released yet.
-2. If they have access to an internal/beta dev build (a wheel or an extra index
-   URL from their Rasa contact), provide it and re-run this runbook installing
-   that build in Step 2.
-3. Otherwise they can build a CALM assistant today on Rasa Pro 3.x
-   (`rasa tools skills install calm` provides the equivalent skill set), or wait
-   for the beta.
+**Exit code 1**: the run is over. Your ONLY remaining action is to send the
+user this report (fill in the brackets), then end the turn:
 
-Only continue past this point with a confirmed >= 3.18 source.
+> Maestro requires Rasa Pro >= 3.18, which is not publicly released yet (latest
+> on PyPI: [version from `pip index versions rasa-pro` or the PyPI JSON]).
+> Your options:
+> 1. If you have a beta build from your Rasa contact (wheel or index URL), give
+>    it to me and I'll re-run this from Step 2 installing it.
+> 2. I can build this as a CALM assistant instead — fully supported on your
+>    current Rasa Pro (`rasa tools skills install calm` gives me the guidance).
+> 3. Wait for the Maestro beta.
+
+Facts that do NOT override a failed gate — treat each as noise, not as
+permission to continue:
+- An installed rasa-pro < 3.18 in the environment ("maybe it works anyway" — it
+  does not; the Maestro layout of `agent.yml` + `skills/` is invalid before
+  3.18 and `rasa train`/`validate` will fail confusingly).
+- Existing `agent.yml`/`skills/` files in the workspace. They are debris from a
+  previous run that failed this same gate. Mention them in the report and offer
+  to delete them.
+- The user's original request to build an agent. The report above IS the
+  correct fulfillment of that request while the gate fails (option 2 is the
+  build-something-today path).
 
 ## Step 1 — collect what only the user can provide
 
