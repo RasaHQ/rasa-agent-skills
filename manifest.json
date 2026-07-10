@@ -1,0 +1,39 @@
+{
+  "manifest_version": 1,
+  "engines": {
+    "calm": {
+      "display_name": "CALM (flows-based, Rasa 3.x)",
+      "skills_path": "skills",
+      "docs_url": "https://rasa.com/docs",
+      "releases": [
+        { "tag": "main", "rasa_version": ">=3.9,<3.18", "latest": true }
+      ],
+      "skills": [
+        { "name": "rasa-building-flows", "description": "Build conversation flows for Rasa CALM assistants using YAML." },
+        { "name": "rasa-configuring-assistant", "description": "Configure config.yml and endpoints.yml for Rasa CALM assistants." },
+        { "name": "rasa-configuring-model-groups", "description": "Configure model_groups in endpoints.yml for LLM and embedding providers." },
+        { "name": "rasa-managing-slots", "description": "Define and manage slots in Rasa CALM assistant domain files." },
+        { "name": "rasa-rephrasing-responses", "description": "Enable and configure the LLM-powered Contextual Response Rephraser." },
+        { "name": "rasa-setting-up-enterprise-search", "description": "Add knowledge base search to a Rasa CALM assistant." },
+        { "name": "rasa-writing-custom-actions", "description": "Write custom actions in Python using the Rasa SDK." },
+        { "name": "rasa-writing-e2e-tests", "description": "Write end-to-end tests for Rasa CALM assistants in YAML." },
+        { "name": "rasa-writing-responses", "description": "Write response templates for Rasa CALM assistants." }
+      ]
+    },
+    "maestro": {
+      "display_name": "Maestro (skills-based, Rasa >=3.18 beta)",
+      "skills_path": "skills-maestro",
+      "docs_url": "https://github.com/RasaHQ/maestro-docs",
+      "releases": [
+        { "tag": "main", "rasa_version": ">=3.18", "latest": true }
+      ],
+      "skills": [
+        { "name": "maestro-bootstrap", "description": "Zero-to-running runbook: install Rasa Pro, scaffold a Maestro project, build a first skill, and talk to the agent. Fetchable and followable without prior installation." },
+        { "name": "maestro-building-skills", "description": "Author Maestro skills: skill.md instructions, Python tools, and the progressive control ladder from pure prose to ordered blocks." },
+        { "name": "maestro-configuring-agent", "description": "Configure agent.yml, integrations.yml, memory.yml, and responses.yml for a Maestro agent." },
+        { "name": "maestro-testing-debugging", "description": "Validate, train, run, and debug a Maestro agent; map observed misbehavior to the right control lever." },
+        { "name": "maestro-migrating-from-calm", "description": "Migrate a CALM (flows-based) assistant to Maestro: what maps, what breaks, and the migration workflow." }
+      ]
+    }
+  }
+}

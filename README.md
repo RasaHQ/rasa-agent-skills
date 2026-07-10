@@ -1,10 +1,46 @@
 # Rasa Agent Skills
 
-A collection of skills for AI coding agents working with [Rasa CALM](https://rasa.com/docs/). Skills are packaged instructions that guide agents through building, configuring, and testing Rasa conversational AI agents.
+A collection of skills for AI coding agents working with Rasa. Skills are packaged instructions that guide agents through building, configuring, and testing Rasa conversational AI agents.
 
 Skills follow the [Agent Skills](https://agentskills.io/) format.
 
-## Available Skills
+## Repository layout
+
+Skills are split by **engine**. A project uses exactly one engine — never mix skill sets.
+
+| Engine | Skills tree | Docs | Rasa versions |
+|---|---|---|---|
+| **CALM** (flows-based) | [`skills/`](skills/) | [rasa.com/docs](https://rasa.com/docs) | 3.9 – 3.17 |
+| **Maestro** (skills-based) | [`skills-maestro/`](skills-maestro/) | [maestro-docs](https://github.com/RasaHQ/maestro-docs) | >= 3.18 (beta) |
+
+[`manifest.json`](manifest.json) is the machine-readable index: engines, skills, releases, and compatible Rasa versions. Tooling (and coding agents) should read the manifest rather than listing directories. `skills/` keeps its historical layout because released Rasa versions fetch it directly — do not move or rename it.
+
+## Installation
+
+With Rasa Pro installed, from your project directory:
+
+```bash
+rasa tools skills install maestro   # or: calm
+rasa tools skills list              # see what's available
+```
+
+The installer picks the skill release matching your Rasa version and writes the skills to your IDE's skills directory (`.claude/skills`, `.cursor/skills`, `.github/skills`, `.codex/skills`). On Rasa versions before the `skills` subcommand, use `rasa tools init skills`.
+
+**Without any installation** (coding agents bootstrapping from zero): fetch [`manifest.json`](https://raw.githubusercontent.com/RasaHQ/rasa-agent-skills/main/manifest.json), then read any skill at `https://raw.githubusercontent.com/RasaHQ/rasa-agent-skills/main/<skills_path>/<name>/SKILL.md`. Start with [`maestro-bootstrap`](skills-maestro/maestro-bootstrap/SKILL.md) — a self-contained zero-to-running-agent runbook.
+
+Versioning policy: see [VERSIONING.md](VERSIONING.md).
+
+## Maestro Skills
+
+| Skill | Use for |
+|---|---|
+| [maestro-bootstrap](skills-maestro/maestro-bootstrap/SKILL.md) | Zero to a running agent: install, scaffold, first skill, validate, train, converse |
+| [maestro-building-skills](skills-maestro/maestro-building-skills/SKILL.md) | Authoring `skill.md` + tools; the progressive control ladder |
+| [maestro-configuring-agent](skills-maestro/maestro-configuring-agent/SKILL.md) | `agent.yml`, `integrations.yml`, `memory.yml`, `responses.yml` |
+| [maestro-testing-debugging](skills-maestro/maestro-testing-debugging/SKILL.md) | validate/train/inspect loop; symptom → control-lever fixes |
+| [maestro-migrating-from-calm](skills-maestro/maestro-migrating-from-calm/SKILL.md) | Porting flows-based assistants: what maps, what breaks |
+
+## CALM Skills
 
 ### rasa-building-flows
 
@@ -165,10 +201,6 @@ Write response templates in Rasa CALM domain files. Covers variations, buttons, 
 - Conditional and channel-specific variations
 - Overriding default pattern responses
 - Voice-specific properties (`allow_interruptions`)
-
-## Installation
-
-TODO
 
 ## Usage
 
