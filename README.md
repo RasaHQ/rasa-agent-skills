@@ -106,6 +106,44 @@ Configure `model_groups` in `endpoints.yml` for LLM and embedding providers. Cov
 - Router customization and Redis-backed strategies
 - Self-hosted models (vLLM, Llama.cpp, Ollama)
 
+### rasa-integrating-asr
+
+Integrate a custom automatic speech recognition (ASR/STT) provider with Rasa voice
+channels from provider documentation. Covers protocol feasibility, audio conversion,
+turn detection, transcript event mapping, and custom engine configuration.
+
+**Use when:**
+- Implementing a custom `ASREngine`
+- Adding a streaming speech-to-text provider
+- Mapping provider transcripts and turn-end events to Rasa
+- Configuring a custom ASR class in `credentials.yml`
+
+**Topics covered:**
+- Provider documentation and feasibility checks
+- `RasaAudioBytes` input formats and conversion
+- `UserIsSpeaking`, `NewTranscript`, and `UserSilence` mapping
+- Turn detection and transcript accumulation
+- Custom module paths, environment variables, and testing
+
+### rasa-integrating-tts
+
+Integrate a custom text-to-speech (TTS) provider with Rasa voice channels from provider
+documentation. Covers streaming and non-streaming synthesis, audio conversion,
+interruption, resource lifecycle, and custom engine configuration.
+
+**Use when:**
+- Implementing a custom `TTSEngine`
+- Adding a text-to-speech provider
+- Choosing streaming or non-streaming text input
+- Configuring a custom TTS class in `credentials.yml`
+
+**Topics covered:**
+- Provider protocol and capability analysis
+- Streaming text input versus streaming audio output
+- `RasaAudioBytes` output formats and conversion
+- In-band interruption and resource cleanup
+- Custom module paths, environment variables, and testing
+
 ### rasa-managing-slots
 
 Define and manage slots in Rasa CALM domain files. Covers slot types, mappings, validation, and how slots are filled and persist across flows.
