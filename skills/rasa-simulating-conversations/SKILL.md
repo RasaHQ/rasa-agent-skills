@@ -5,8 +5,8 @@ description: >
 license: Apache-2.0
 metadata:
   author: rasa
-  version: "0.1.0"
-  rasa_version: ">=3.20.0"
+  version: "0.2.0"
+  rasa_version: ">=3.21.0"
   docs-url: https://rasa.com/docs/pro/testing/simulation-evaluation/
 allowed-tools: >-
   Read Glob Grep Write Edit TodoWrite ToolSearch
@@ -458,7 +458,7 @@ date +%Y-%m-%d_%H-%M-%S
 Use the output as the `experiment_timestamp` for all `evaluate_agent` calls. If you encounter a permission error, use the currentDate from the system context.
 
 Call `evaluate_agent` **once**, passing every scenario path for this session as `scenario_paths`. Scenarios and their repeated runs are evaluated concurrently; do not loop and call the tool per file.
-Use `run_count` (1–10, default 1) to run each scenario multiple times — repeated runs surface flakiness in LLM-driven conversations.
+Use `run_count` (1–10, default 3) to run each scenario multiple times — repeated runs surface flakiness in LLM-driven conversations.
 Use `parallelism` (default 3, max 8) to cap how many runs execute at once. Leave it at the default unless the user asks for something different: one run is many LLM calls, not one — a simulation call per conversation turn, the agent's own calls behind each turn, then one or two evaluation calls — so provider and server load is a large multiple of this number.
 
 ```
