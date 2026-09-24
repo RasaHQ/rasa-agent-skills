@@ -5,8 +5,8 @@ description: >
 license: Apache-2.0
 metadata:
   author: rasa
-  version: "0.1.0"
-  rasa_version: ">=3.17.0"
+  version: "0.2.0"
+  rasa_version: ">=3.21.0"
   docs-url: https://rasa.com/docs/pro/testing/simulation-evaluation/
 allowed-tools: >-
   Read Glob Grep Write Edit TodoWrite ToolSearch
@@ -457,44 +457,95 @@ date +%Y-%m-%d_%H-%M-%S
 
 Use the output as the `experiment_timestamp` for all `evaluate_agent` calls. If you encounter a permission error, use the currentDate from the system context.
 
-Run scenarios sequentially using `evaluate_agent`, passing the same `experiment_timestamp` to every call.
-Use `run_count` (1–10, default 1) to run a scenario multiple times — repeated runs surface flakiness in LLM-driven conversations.
+Call `evaluate_agent` **once**, passing every scenario path for this session as `scenario_paths`. Scenarios and their repeated runs are evaluated concurrently; do not loop and call the tool per file.
+Use `run_count` (1–10, default 3) to run each scenario multiple times — repeated runs surface flakiness in LLM-driven conversations.
+Use `parallelism` (default 3, max 8) to cap how many runs execute at once. Leave it at the default unless the user asks for something different: one run is many LLM calls, not one — a simulation call per conversation turn, the agent's own calls behind each turn, then one or two evaluation calls — so provider and server load is a large multiple of this number.
 
 ```
 evaluate_agent(
-  scenario_path="eval/scenarios/<scenario_type>.yml",
+  scenario_paths=[
+    "eval/scenarios/<scenario_type>.yml",
+    "eval/scenarios/<other_scenario_type>.yml"
+  ],
   experiment_timestamp=experiment_timestamp,
-  run_count=3
+  run_count=3,
+  parallelism=3
 )
 ```
 
+A single scenario is just a one-element list.
+
+The call is rejected before anything runs if two paths share the same filename,
+compared ignoring case (`a/checkout.yml` and `b/Checkout.yml` collide), because
+results are keyed on the filename and one would overwrite the other. Rename one
+scenario or evaluate them in separate calls — do not retry the same batch.
+
+A batch is also capped at 50 scenarios. If a session has more, split them across
+several calls that share the same `experiment_timestamp`, so they still land in
+one results folder.
+
 ### Step 7 — Report results
 
-After the tool returns, summarize clearly:
+The tool returns `scenario_results` — one entry per scenario in the batch, each
+with `scenario_name`, `runs_total`, `runs_passed` and `runs_errored`. Lead with
+the batch total, then break down per scenario.
+
+**Check `runs_errored` before reporting anything as an agent failure.** It counts
+runs that failed for harness reasons rather than on their merits — a timeout, a
+cancellation, or an error reaching the Rasa server or the LLM provider. Those runs
+never produced a verdict, so they say nothing about the agent. Report them
+separately, as an evaluation problem, and do not present them as the agent
+failing.
+
+`success: false` means either the setup failed (unreadable `eval/conftest.yml`, a
+bad scenario path) or *every* run failed that way, so nothing was evaluated at
+all. A batch where only some runs errored is still `success: true` — which is why
+`runs_errored` has to be read, not just `success`.
 
 **If all runs passed:**
 
 ```
-3/3 runs passed for "<scenario name>"
+6/6 runs passed across 2 scenarios
+
+"<scenario name>" — 3/3
+"<other scenario name>" — 3/3
+
 Quality (avg across runs): bot_quality 4.2/5 | helpfulness 4/5 | coherence 5/5 | repair_quality 4/5 | tone 4/5 | task_completion PASS
-Result file: eval/results/<timestamp>/<scenario-name>/run_N.txt
+Result files: eval/results/<timestamp>/<scenario-name>/run_N.txt (plus run_N.json)
 ```
 
 **If some runs failed:**
 
 ```
-1/3 runs passed for "<scenario name>"
+4/6 runs passed across 2 scenarios
 
-Run 2 failed:
-  ✗ slot_was_set: <slot_name>
-       slot '<slot_name>' = None
+"<scenario name>" — 1/3
+  Run 2 failed:
+    ✗ slot_was_set: <slot_name>
+         slot '<slot_name>' = None
 
-Run 3 failed:
-  ✗ success_criteria: "Agent confirms the task was completed successfully"
-       Bot did not send a confirmation message before ending the conversation.
+  Run 3 failed:
+    ✗ success_criteria: "Agent confirms the task was completed successfully"
+         Bot did not send a confirmation message before ending the conversation.
+
+"<other scenario name>" — 3/3
 
 Quality (avg across runs): bot_quality 2.8/5 | helpfulness 3/5 | coherence 3/5 | repair_quality 2/5 | tone 3/5 | task_completion FAIL
-Result file: eval/results/<timestamp>/<scenario-name>/run_N.txt
+Result files: eval/results/<timestamp>/<scenario-name>/run_N.txt (plus run_N.json)
+```
+
+Errored runs count as failures in `runs_passed` vs `runs_total`, and each still
+has a `run_N.txt` — a placeholder recording what ended it when the run was
+cancelled, or an ordinary report carrying the error. Open that file to say *why*
+a run errored rather than reporting it as a plain failure.
+
+**If `runs_errored` is greater than zero, say so before the pass/fail numbers.**
+For example:
+
+```
+0/6 runs passed across 2 scenarios — but all 6 runs errored before reaching the
+agent (connection refused to http://localhost:5005). This is an evaluation
+problem, not a result for the agent. Check the Rasa server is running, then re-run.
 ```
 
 Do not attempt to fix failures unless the user asks. Report what failed and where, then wait.
@@ -527,7 +578,8 @@ problem, not a bot bug**. In that case:
    ```
 4. Only after the user confirms (and provides values if needed), update the
    affected `simulation_context` (and any `initial_slots` / assertions that
-   hard-code the value), then re-run that scenario with the same `experiment_timestamp`.
+   hard-code the value), then re-run that scenario on its own — a one-element
+   `scenario_paths` list with the same `experiment_timestamp`.
 
 Only scenarios that are *designed* to fail (wrong password, unknown order) keep
 invalid values — there, assert the "not found" / failure behavior instead of
@@ -541,7 +593,9 @@ If the user asks to fix a failure:
 2. Point to the specific file and line
 3. Propose the fix — if the fix is a **scenario** change, explain why and get
    confirmation before editing (same rule as after Step 5)
-4. After the fix, re-run the failing scenario to confirm it passes
+4. After the fix, re-run the failing scenario to confirm it passes — call
+   `evaluate_agent` with a one-element `scenario_paths` list and the same
+   `experiment_timestamp`, not the whole batch
 
 ---
 
