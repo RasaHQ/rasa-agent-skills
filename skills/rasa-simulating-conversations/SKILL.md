@@ -222,17 +222,23 @@ Stop and wait — do not proceed until the user confirms the server is up.
 The `--inspect` flag loads the Inspector in the same process, so a single server is all that's needed — no separate
 `rasa inspect` command.
 
-**After retraining:** always check `agent_reloaded` in the `train_rasa_assistant` response.
+**After retraining:** if the user asked you to retrain and you called `train_rasa_assistant`, always check
+`agent_reloaded` in its response. (After a fix in Step 8 the user retrains and restarts themselves — you do
+not retrain on your own.)
 
 - If `agent_reloaded: true` — the server picked up the new model, proceed to simulate.
-- If `agent_reloaded: false` — the server is not running. Do NOT attempt workarounds (e.g. SlotSet in custom actions).
-Tell the user:
+- If `agent_reloaded: false` — **the running server is still serving the old model.** This does *not* on its
+  own mean the server is down. Hot-reload only works when the bot is served by the Rasa builder service;
+  with a standalone `rasa run`, there is no reload endpoint to call, so a newly trained model is picked up
+  only on restart. Do NOT attempt workarounds (e.g. SlotSet in custom actions) and do not simulate against
+  the old model. Tell the user:
   ```
-  The model was trained but the server is not running. Start it with:
-    rasa run --inspect
+  The model trained, but the running server is still on the old model. Restart it with:
+    rasa run --inspect --credentials credentials.yml
   Then say "re-run the simulation" and I'll continue from here.
   ```
-  Stop and wait — do not re-run the simulation until the user confirms the server is up.
+  Stop and wait — do not re-run the simulation until the user confirms the server is back up.
+  If `talk_to_assistant` is unreachable too, the server really is down; the same restart covers both cases.
 
 ### Step 3 - Ensure MCP server is running
 
@@ -523,10 +529,12 @@ Result files: eval/results/<timestamp>/<scenario-name>/run_N.txt (plus run_N.jso
   Run 2 failed:
     ✗ slot_was_set: <slot_name>
          slot '<slot_name>' = None
+         turn 3 — bot moved on to confirmation without ever asking for <slot_name>
 
   Run 3 failed:
     ✗ success_criteria: "Agent confirms the task was completed successfully"
          Bot did not send a confirmation message before ending the conversation.
+         turn 6 — bot ended after "anything else?" with no confirmation
 
 "<other scenario name>" — 3/3
 
@@ -548,7 +556,9 @@ agent (connection refused to http://localhost:5005). This is an evaluation
 problem, not a result for the agent. Check the Rasa server is running, then re-run.
 ```
 
-Do not attempt to fix failures unless the user asks. Report what failed and where, then wait.
+For each failing run, say **where** it went wrong, not just which check failed: name the conversation turn
+from the transcript in `run_N.txt` (the bot turn that broke the assertion, or the point the criterion stopped
+being satisfiable), as in the `turn N` lines above.
 
 **Before reporting a failure as a bot problem, rule out invalid mock data.**
 Some failures are caused by the data the simulator supplied not existing in the
@@ -574,28 +584,100 @@ problem, not a bot bug**. In that case:
    The happy-path run for "<scenario name>" failed because the order number I
    used (12345) wasn't found in the backend. What's a valid test order number /
    username / password I should use? Once you confirm, I'll update the scenario
-   and re-run.
+   and ask before re-running.
    ```
 4. Only after the user confirms (and provides values if needed), update the
    affected `simulation_context` (and any `initial_slots` / assertions that
-   hard-code the value), then re-run that scenario on its own — a one-element
-   `scenario_paths` list with the same `experiment_timestamp`.
+   hard-code the value), then ask whether to re-run (Step 8) — this is a
+   scenario-only edit, so no retrain or restart is needed. On a yes, re-run that
+   scenario on its own: a one-element `scenario_paths` list with the same
+   `experiment_timestamp`.
 
 Only scenarios that are *designed* to fail (wrong password, unknown order) keep
 invalid values — there, assert the "not found" / failure behavior instead of
 asking for new data.
 
-### Step 8 — Fix on request only
+**Do not edit the bot, a flow, a prompt or a scenario while reporting.** Report what failed and where, then
+continue into Step 8 — root-cause analysis and a proposed fix follow **every** genuine failure automatically,
+without the user having to ask. Nothing is changed until the user picks a fix.
 
-If the user asks to fix a failure:
+### Step 8 — Analyze every failure and propose a fix
 
-1. Identify the root cause: wrong response template? missing slot handling? flow routing issue? bad scenario data?
-2. Point to the specific file and line
-3. Propose the fix — if the fix is a **scenario** change, explain why and get
-   confirmation before editing (same rule as after Step 5)
-4. After the fix, re-run the failing scenario to confirm it passes — call
-   `evaluate_agent` with a one-element `scenario_paths` list and the same
-   `experiment_timestamp`, not the whole batch
+This step is **not** optional and does not wait to be asked. Whenever a run fails on its merits, analyze it
+and propose a fix. Analyzing is not changing: you never edit anything until the user picks a fix.
+
+**First, exclude errored runs.** A run counted in `runs_errored` never produced a verdict — it timed out, was
+cancelled, or could not reach the Rasa server or the LLM provider. Do not root-cause it and do not put it in
+a bucket; suggesting a flow fix for a server that was not running wastes the user's time. Report it as an
+evaluation problem (Step 7) and stop there for that run.
+
+**Group before analyzing.** Several failing runs usually share one root cause — the same assertion failing in
+runs 1, 2 and 3 is one finding, not three. Group identical failures, analyze each distinct root cause once,
+and say how many runs it accounts for. With many distinct causes, lead with the ones that explain the most
+failed runs.
+
+**Then classify each genuine failure into exactly one bucket:**
+
+| Bucket | What it means | Typical evidence | Where to look |
+| ------ | ------------- | ---------------- | ------------- |
+| **Flow issue** | The flow is missing a path, has a gap, or is ambiguous | Bot dead-ends, loops, or routes to the wrong flow; `flow_completed` / `action_executed` assertions fail | The flow YAML under `data/`, plus slot/mapping definitions in the domain |
+| **Prompt issue** | The agent needs clearer instructions | Bot picks a plausible-but-wrong step, ignores context it was given, or answers off-task | The prompt template referenced from `config.yml`, and any flow/step descriptions the command generator reads |
+| **Scenario issue** | The scenario is unrealistic, outdated, or too strict | Assertion hard-codes phrasing the bot no longer uses; a criterion demands behavior the bot was never meant to have; **invalid test data** as triaged above belongs here | The scenario YAML in `eval/scenarios/` |
+| **Tool/mock issue** | The tool contract or the mocked response is wrong | Tool called with the right arguments but returns a value the bot can't use, or the backend contradicts what the scenario assumes | The custom action / API the tool calls, and its endpoint config |
+
+Note that scenario-level mocking of tool calls does not exist yet, so a "tool/mock" failure today means the
+real tool or backend behaved unusably — there is no mock definition in the scenario to correct. Say so plainly
+rather than proposing an edit to something that isn't there.
+
+If a failure genuinely spans two buckets, name the one you would fix first and say why.
+
+**Then, for each distinct root cause:**
+
+1. **Name the bucket and the evidence** — the failing assertion/criterion, the turn it happened on, the
+   `run_N.txt` path, and the specific file and line you believe is at fault.
+2. **Propose the fix.** If more than one fix is plausible, list them and ask which the user wants — do not
+   silently pick one.
+3. **Wait for confirmation before editing anything — in every bucket.** This includes flows, prompts,
+   domain and response templates, not just scenarios. Scenario edits carry the extra bar from Step 5:
+   explain why the scenario itself is wrong, with evidence from the run.
+4. **Apply only the fix the user chose.**
+5. **Hand back — do not retrain, restart or re-run on your own.**
+
+**Handing back after a fix**
+
+What the user has to do before a re-run means anything depends on what you changed:
+
+| What you changed | What it takes to pick the change up |
+| ---------------- | ----------------------------------- |
+| Flows, domain, responses, prompt templates, `config.yml` | `rasa train`, **then** restart the Rasa server |
+| Custom action code | Restart the **action server** only — no retrain |
+| `endpoints.yml` / `credentials.yml` | Restart the Rasa server — no retrain |
+| Scenario YAML | Nothing |
+
+A running `rasa run` keeps serving the model it started with (see Step 2), so a re-run before the retrain and
+restart tests the *old* model and produces a misleading result. Say exactly which of the steps above applies —
+do not tell the user to retrain for a change that doesn't need it. For a model-affecting fix:
+
+```
+I've updated <file>. That change only takes effect after a retrain, so before re-running:
+
+  1. rasa train
+  2. Restart the server:  rasa run --inspect --credentials credentials.yml
+
+Tell me when you'd like the evals re-run and I'll re-run "<scenario name>".
+```
+
+Do not call `train_rasa_assistant` yourself unless the user asks you to. It trains a new model but cannot
+restart the server, so it leaves the same manual step outstanding.
+
+A **scenario-only** edit needs neither a retrain nor a restart, so there just ask:
+
+```
+I've updated <scenario file>. No retrain needed — want me to re-run "<scenario name>"?
+```
+
+When the user asks for the re-run, call `evaluate_agent` with a one-element `scenario_paths` list and the same
+`experiment_timestamp`, not the whole batch.
 
 ---
 
@@ -623,7 +705,9 @@ If the user asks to fix a failure:
 | `bot_uttered` with `text_matches` fails unexpectedly | Bot uses different phrasing                                   | Read the transcript in the result file; prefer structural assertions (`flow_completed`, `action_executed`) over regex     |
 | Simulation hits max turns (20)                      | Bot stuck in loop or user simulator confused                   | Read transcript, check if bot keeps re-asking same question                                                              |
 | All criteria pass but assertions fail               | Slot not being filled                                          | Check tracker slots in result file, verify slot mappings in domain                                                       |
-| Happy-path run fails with "not found" / auth errors | Mock value (order no., account, password) isn't in the backend | Test-data problem, not a bot bug — ask the user for valid test data, update `simulation_context`/`initial_slots`, re-run |
+| Happy-path run fails with "not found" / auth errors | Mock value (order no., account, password) isn't in the backend | Test-data problem, not a bot bug — ask the user for valid test data, update `simulation_context`/`initial_slots`, ask before re-running |
+| `agent_reloaded: false` after training, but the bot still answers | Standalone `rasa run` has no reload endpoint, so it keeps serving the model it started with | Not a "server down" error — ask the user to restart the server, then re-run (Step 2) |
+| Fix applied, re-run fails identically | Model wasn't retrained/restarted, so the run tested the old model | Hand back after a fix: user retrains and restarts, then asks for the re-run (Step 8) |
 
 
 ---
