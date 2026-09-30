@@ -176,6 +176,22 @@ Enable and configure the LLM-powered Contextual Response Rephraser. Covers `endp
 - Rephrasing scope (specific, all, all-except)
 - Global and per-response prompt customization
 
+### rasa-searching-docs
+
+Answer questions about Rasa Pro and CALM from the documentation that `rasa tools init` bundles locally in `.rasa/llms.txt` and `.rasa/llms-full.txt`, instead of from the agent's memory.
+
+**Use when:**
+- Answering any "how does X work", "how do I Y", or "is Z supported" question about Rasa
+- Looking up config keys, flow step fields, patterns, CLI commands, or integrations
+- No other skill covers the request
+
+**Topics covered:**
+- Index-first lookup: find the page in `llms.txt`, then read only that page or one section of it from `llms-full.txt`
+- Full-text search when the index has no clear match
+- Checking features against the project's Rasa version
+- Telling CALM, NLU-based, Studio, and Mantle documentation apart
+- Detecting a stale docs bundle, and online fallbacks when it is missing
+
 ### rasa-setting-up-a2a-agents
 
 Connect external sub agents to a Rasa CALM assistant via the A2A (Agent-to-Agent) protocol. Covers agent card configuration, authentication, flow invocation, and input/output customization.
